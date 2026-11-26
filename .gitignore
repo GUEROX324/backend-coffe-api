@@ -1,0 +1,39 @@
+
+# Variables de entorno y credenciales
+.env
+.env.*
+!.env.example
+my.cnf
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Archivos de pruebas y caché
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Archivos temporales
+*.log
+*.tmp
+*.bak
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Configuración local del editor
+.vscode/
+.idea/
+
+# Bases de datos locales
+*.sqlite3
