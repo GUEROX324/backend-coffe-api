@@ -28,6 +28,7 @@ from backend_coffee_api.views import pedidos
 from backend_coffee_api.views import cocina
 from backend_coffee_api.views import entregas
 from backend_coffee_api.views import stats
+from backend_coffee_api.views import personalizacion
 
 urlpatterns = [
     # Configuración inicial
@@ -85,8 +86,27 @@ urlpatterns = [
     path('api/stats/productos/', stats.StatsProductosView.as_view()),
     path('api/stats/pedidos/', stats.StatsPedidosView.as_view()),
     path('api/stats/caja/', stats.StatsCajaView.as_view()),
-
     path('api/caja/historial/<int:turno_id>/',caja.DetalleHistorialCajaView.as_view(),name='detalle-historial-caja'),
+
+    # VARIANTES
+    path('api/variantes/', personalizacion.VariantesView.as_view()),
+    path('api/variantes/<int:id>/', personalizacion.VarianteDetalleView.as_view()),
+
+    # INGREDIENTES
+    path('api/ingredientes/', personalizacion.IngredientesView.as_view()),
+    path('api/ingredientes/<int:id>/', personalizacion.IngredienteDetalleView.as_view()),
+
+    # RECETAS
+    path('api/recetas/', personalizacion.RecetasView.as_view()),
+    path('api/recetas/<int:id>/', personalizacion.RecetaDetalleView.as_view()),
+
+    # EXTRAS
+    path('api/extras/<int:id>/', personalizacion.ExtraDetalleView.as_view()),
+    path('api/extras/', personalizacion.ExtrasView.as_view()),
+
+    # EXTRAS PERMITIDOS
+    path('api/extras-permitidos/', personalizacion.ExtrasPermitidosView.as_view()),
+    path('api/extras-permitidos/<int:id>/', personalizacion.ExtraPermitidoDetalleView.as_view()),
 
 
 ]

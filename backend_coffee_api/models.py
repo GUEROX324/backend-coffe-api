@@ -263,3 +263,223 @@ class ConfiguracionSistema(models.Model):
 
     def __str__(self):
         return 'Configuración inicial de Backend Coffee'
+
+
+# ==========================================
+# VARIANTES DE PRODUCTOS
+# ==========================================
+
+class VarianteProducto(models.Model):
+    id = models.BigAutoField(primary_key=True)
+
+    producto = models.ForeignKey(
+        Producto,
+        on_delete=models.PROTECT,
+        related_name='variantes'
+    )
+
+    nombre = models.CharField(max_length=100)
+
+    precio = models.DecimalField(
+        max_digits=10,
+        decimal_places=2
+    )
+
+    activo = models.BooleanField(default=True)
+
+    orden = models.PositiveSmallIntegerField(default=0)
+
+    creation = models.DateTimeField(auto_now_add=True)
+    update = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'variantes_producto'
+        ordering = ['orden', 'id']
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=['producto', 'nombre'],
+                name='variante_nombre_producto_unico'
+            ),
+            models.CheckConstraint(
+                condition=Q(precio__gte=0),
+                name='variante_precio_no_negativo'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.producto.nombre} - {self.nombre}'
+
+
+# ==========================================
+# INGREDIENTES
+# ==========================================
+
+class Ingrediente(models.Model):
+
+    class Unidad(models.TextChoices):
+        GRAMO = 'g', 'Gramos'
+        KILOGRAMO = 'kg', 'Kilogramos'
+        MILILITRO = 'ml', 'Mililitros'
+        LITRO = 'L', 'Litros'
+        PIEZA = 'pza', 'Piezas'
+
+    id = models.BigAutoField(primary_key=True)
+
+    nombre = models.CharField(
+        max_length=150,
+        unique=True
+    )
+
+    descripcion = models.TextField(blank=True)
+
+    unidad = models.CharField(
+        max_length=5,
+        choices=Unidad.choices
+    )
+
+    activo = models.BooleanField(default=True)
+
+    creation = models.DateTimeField(auto_now_add=True)
+    update = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'ingredientes'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return f'{self.nombre} ({self.unidad})'
+
+
+# ==========================================
+# RECETAS POR VARIANTE
+# ==========================================
+
+class RecetaDetalle(models.Model):
+    id = models.BigAutoField(primary_key=True)
+
+    variante = models.ForeignKey(
+        VarianteProducto,
+        on_delete=models.PROTECT,
+        related_name='receta'
+    )
+
+    ingrediente = models.ForeignKey(
+        Ingrediente,
+        on_delete=models.PROTECT,
+        related_name='recetas'
+    )
+
+    cantidad = models.DecimalField(
+        max_digits=12,
+        decimal_places=3
+    )
+
+    creation = models.DateTimeField(auto_now_add=True)
+    update = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'recetas_detalle'
+        ordering = ['id']
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=['variante', 'ingrediente'],
+                name='receta_variante_ingrediente_unico'
+            ),
+            models.CheckConstraint(
+                condition=Q(cantidad__gt=0),
+                name='receta_cantidad_positiva'
+            )
+        ]
+
+    def __str__(self):
+        return (
+            f'{self.variante} - '
+            f'{self.ingrediente.nombre}: '
+            f'{self.cantidad} {self.ingrediente.unidad}'
+        )
+
+
+# ==========================================
+# EXTRAS
+# ==========================================
+
+class Extra(models.Model):
+    id = models.BigAutoField(primary_key=True)
+
+    nombre = models.CharField(
+        max_length=150,
+        unique=True
+    )
+
+    descripcion = models.TextField(blank=True)
+
+    precio = models.DecimalField(
+        max_digits=10,
+        decimal_places=2
+    )
+
+    activo = models.BooleanField(default=True)
+
+    creation = models.DateTimeField(auto_now_add=True)
+    update = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'extras'
+        ordering = ['nombre']
+
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(precio__gte=0),
+                name='extra_precio_no_negativo'
+            )
+        ]
+
+    def __str__(self):
+        return self.nombre
+
+
+# ==========================================
+# EXTRAS PERMITIDOS POR PRODUCTO
+# ==========================================
+
+class ExtraPermitido(models.Model):
+    id = models.BigAutoField(primary_key=True)
+
+    producto = models.ForeignKey(
+        Producto,
+        on_delete=models.PROTECT,
+        related_name='extras_permitidos'
+    )
+
+    extra = models.ForeignKey(
+        Extra,
+        on_delete=models.PROTECT,
+        related_name='productos_permitidos'
+    )
+
+    obligatorio = models.BooleanField(default=False)
+
+    cantidad_maxima = models.PositiveSmallIntegerField(
+        default=1
+    )
+
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'extras_permitidos'
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=['producto', 'extra'],
+                name='extra_permitido_producto_unico'
+            ),
+            models.CheckConstraint(
+                condition=Q(cantidad_maxima__gte=1),
+                name='extra_cantidad_maxima_positiva'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.extra.nombre} para {self.producto.nombre}'

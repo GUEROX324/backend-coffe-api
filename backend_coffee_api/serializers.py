@@ -11,7 +11,7 @@ from backend_coffee_api.models import MovimientoCaja, VentaCaja
 from decimal import Decimal
 from datetime import timedelta
 from django.utils import timezone
-
+from backend_coffee_api.models import (VarianteProducto,Ingrediente,RecetaDetalle,Extra,ExtraPermitido,)
 
 class UserSerializer(serializers.ModelSerializer):
     rol = serializers.SerializerMethodField()
@@ -428,3 +428,255 @@ class FiltroReporteSerializer(serializers.Serializer):
         data['fecha_inicio'] = inicio
         data['fecha_fin'] = fin
         return data
+
+# =====================================================
+# SERIALIZADORES DE PERSONALIZACIÓN DE PRODUCTOS
+# =====================================================
+
+
+# =====================================================
+# VARIANTES DE PRODUCTOS
+# =====================================================
+
+class VarianteProductoSerializer(serializers.ModelSerializer):
+
+    producto_nombre = serializers.CharField(
+        source='producto.nombre',
+        read_only=True
+    )
+
+    class Meta:
+        model = VarianteProducto
+
+        fields = (
+            'id',
+            'producto',
+            'producto_nombre',
+            'nombre',
+            'precio',
+            'activo',
+            'orden',
+            'creation',
+            'update'
+        )
+
+        read_only_fields = (
+            'id',
+            'creation',
+            'update'
+        )
+
+    def validate_nombre(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError(
+                'El tamaño o presentación debe tener un nombre.'
+            )
+
+        return value
+
+    def validate_precio(self, value):
+
+        if value < Decimal('0.00'):
+            raise serializers.ValidationError(
+                'El precio no puede ser negativo.'
+            )
+
+        return value
+
+
+# =====================================================
+# INGREDIENTES
+# =====================================================
+
+class IngredienteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Ingrediente
+
+        fields = (
+            'id',
+            'nombre',
+            'descripcion',
+            'unidad',
+            'activo',
+            'creation',
+            'update'
+        )
+
+        read_only_fields = (
+            'id',
+            'creation',
+            'update'
+        )
+
+    def validate_nombre(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError(
+                'El ingrediente debe tener un nombre.'
+            )
+
+        return value
+
+
+# =====================================================
+# RECETAS POR VARIANTE
+# =====================================================
+
+class RecetaDetalleSerializer(serializers.ModelSerializer):
+
+    variante_nombre = serializers.CharField(
+        source='variante.nombre',
+        read_only=True
+    )
+
+    ingrediente_nombre = serializers.CharField(
+        source='ingrediente.nombre',
+        read_only=True
+    )
+
+    unidad = serializers.CharField(
+        source='ingrediente.unidad',
+        read_only=True
+    )
+
+    class Meta:
+        model = RecetaDetalle
+
+        fields = (
+            'id',
+            'variante',
+            'variante_nombre',
+            'ingrediente',
+            'ingrediente_nombre',
+            'unidad',
+            'cantidad',
+            'creation',
+            'update'
+        )
+
+        read_only_fields = (
+            'id',
+            'creation',
+            'update'
+        )
+
+    def validate_cantidad(self, value):
+
+        if value <= Decimal('0'):
+            raise serializers.ValidationError(
+                'La cantidad debe ser mayor que cero.'
+            )
+
+        return value
+
+
+# =====================================================
+# EXTRAS
+# =====================================================
+
+class ExtraSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Extra
+
+        fields = (
+            'id',
+            'nombre',
+            'descripcion',
+            'precio',
+            'activo',
+            'creation',
+            'update'
+        )
+
+        read_only_fields = (
+            'id',
+            'creation',
+            'update'
+        )
+
+    def validate_nombre(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError(
+                'El extra debe tener un nombre.'
+            )
+
+        return value
+
+    def validate_precio(self, value):
+
+        if value < Decimal('0.00'):
+            raise serializers.ValidationError(
+                'El precio no puede ser negativo.'
+            )
+
+        return value
+
+
+# =====================================================
+# EXTRAS PERMITIDOS POR PRODUCTO
+# =====================================================
+
+class ExtraPermitidoSerializer(serializers.ModelSerializer):
+
+    producto_nombre = serializers.CharField(
+        source='producto.nombre',
+        read_only=True
+    )
+
+    extra_nombre = serializers.CharField(
+        source='extra.nombre',
+        read_only=True
+    )
+
+    class Meta:
+        model = ExtraPermitido
+
+        fields = (
+            'id',
+            'producto',
+            'producto_nombre',
+            'extra',
+            'extra_nombre',
+            'obligatorio',
+            'cantidad_maxima',
+            'activo'
+        )
+
+        read_only_fields = ('id',)
+
+    def validate_cantidad_maxima(self, value):
+
+        if value < 1:
+            raise serializers.ValidationError(
+                'La cantidad máxima debe ser al menos 1.'
+            )
+
+        return value
+
+    def validate(self, attrs):
+
+        extra = attrs.get(
+            'extra',
+            self.instance.extra if self.instance else None
+        )
+
+        activo = attrs.get(
+            'activo',
+            self.instance.activo if self.instance else True
+        )
+
+        if extra and activo and not extra.activo:
+            raise serializers.ValidationError({
+                'extra': (
+                    'No puedes habilitar un extra inactivo.'
+                )
+            })
+
+        return attrs
